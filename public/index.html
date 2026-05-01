@@ -60,7 +60,10 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
 .pi{height:100%;display:flex;flex-direction:column}
 .ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.5px solid #eee;padding-bottom:3px;margin-bottom:5px;flex-shrink:0}
 .pb{flex:1;overflow:hidden}
-.vtext{writing-mode:vertical-rl;text-orientation:mixed;height:100%;overflow:hidden;line-height:2;word-break:break-all}
+.vtext{writing-mode:vertical-rl;text-orientation:mixed;height:100%;width:100%;overflow:hidden;line-height:1.85;word-break:break-all}
+.vtext p{margin:0;text-indent:1em}
+.vtext p+p{margin-inline-start:0}
+.htext p{margin:0 0 .8em;text-indent:1.5em}
 .htext{line-height:1.85;overflow:hidden;height:100%}
 .cvr{justify-content:center;align-items:center;text-align:center;padding:20px}
 @media print{
@@ -100,8 +103,8 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
     </select>
     <label>レイアウト</label>
     <div class="trow">
-      <button class="tb" data-la="jp">日本語<br>のみ</button>
-      <button class="tb on" data-la="bi">日英<br>交互</button>
+      <button class="tb on" data-la="jp">日本語<br>のみ</button>
+      <button class="tb" data-la="bi">日英<br>交互</button>
       <button class="tb" data-la="en">訳文<br>のみ</button>
     </div>
     <button class="abtn btn-t" id="bt" onclick="doTranslate()" style="margin-top:10px">✦ AIで翻訳する</button>
@@ -166,6 +169,11 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
       <button class="tb" data-pa="B5">B5</button>
       <button class="tb" data-pa="Letter">Letter</button>
     </div>
+    <label>製本サイズ</label>
+    <div class="trow">
+      <button class="tb on" data-fold="2">半分（用紙の1/2）</button>
+      <button class="tb" data-fold="4">1/4（小冊子）</button>
+    </div>
     <label>綴じ方向</label>
     <div class="trow">
       <button class="tb on" data-bi="r">右綴じ</button>
@@ -210,7 +218,7 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
 const PAPERS={A4:[297,210],A3:[420,297],B4:[364,257],B5:[257,182],Letter:[279,216]};
 const mm=m=>Math.round(m*96/25.4), pt=p=>Math.round(p*96/72);
 
-const S={jpF:"'Noto Serif JP',serif",enF:"'Lora',serif",jpSz:9,enSz:8,paper:'A4',bind:'r',mg:10,la:'bi',ruby:true,pn:true,col:true,cv:'simple',pm:'seq',pJp:[],pEn:[],meta:{}};
+const S={jpF:"'Noto Serif JP',serif",enF:"'Lora',serif",jpSz:9,enSz:8,paper:'A4',fold:2,bind:'r',mg:10,la:'jp',ruby:true,pn:true,col:true,cv:'simple',pm:'seq',pJp:[],pEn:[],meta:{}};
 
 const DEMO={
   titleJp:'草枕',titleEn:'Kusa Makura',authorJp:'夏目漱石',authorEn:'Natsume Soseki',
@@ -362,10 +370,74 @@ function updateCN(){
   document.getElementById('cnote').textContent=`この作品の翻訳費用（初回）: 約¥${est}〜¥${est*2}。2回目以降はキャッシュで無料。`;
 }
 
+function pageDimensions(){
+  const [fw,fh]=PAPERS[S.paper];
+  // S.fold === 2: 用紙の半分が1ページ（普通の見開き製本）
+  // S.fold === 4: 用紙の1/4が1ページ（小冊子）
+  if(S.fold===4){
+    return [mm(fw/2), mm(fh/2)];
+  }
+  return [mm(fw/2), mm(fh)];
+}
+
+// 1ページに収まる目安文字数を計算
+function charsPerPageJp(){
+  const [pw,ph]=pageDimensions();
+  const fontPx=pt(S.jpSz);
+  const lineH=fontPx*1.85;
+  const pad=mm(S.mg)+mm(8);  // 余白の合計（粗い見積もり）
+  const usableH=ph-2*mm(8)-fontPx*2;  // ヘッダー高さも引く
+  const usableW=pw-2*pad;
+  const charsPerCol=Math.max(10,Math.floor(usableH/fontPx));
+  const cols=Math.max(1,Math.floor(usableW/lineH));
+  return Math.floor(charsPerCol*cols*0.85);  // 安全マージン15%
+}
+
+function charsPerPageEn(){
+  const [pw,ph]=pageDimensions();
+  const fontPx=pt(S.enSz);
+  const lineH=fontPx*1.55;
+  const pad=mm(S.mg)+mm(8);
+  const usableH=ph-2*mm(8)-fontPx*2;
+  const usableW=pw-2*pad;
+  // 英文は1文字幅が約 fontPx*0.5 (proportional)
+  const charsPerLine=Math.floor(usableW/(fontPx*0.5));
+  const lines=Math.floor(usableH/lineH);
+  return Math.floor(charsPerLine*lines*0.9);
+}
+
+// 段落配列をページ単位に詰める
+function packIntoPages(paragraphs, cpp, isJp){
+  const pages=[];
+  let buf=[];
+  let bufLen=0;
+  for(const p of paragraphs){
+    const visLen=isJp?stripRubyText(p).length:p.length;
+    if(bufLen+visLen>cpp && buf.length){
+      pages.push(buf.join('\n\n'));
+      buf=[];bufLen=0;
+    }
+    if(visLen>cpp*1.5){
+      // 1段落が極端に長い→単独で1ページ（CSSで詰める）
+      if(buf.length){pages.push(buf.join('\n\n'));buf=[];bufLen=0;}
+      pages.push(p);
+    }else{
+      buf.push(p);
+      bufLen+=visLen;
+    }
+  }
+  if(buf.length)pages.push(buf.join('\n\n'));
+  return pages;
+}
+
+function stripRubyText(t){
+  return (t||'').replace(/<ruby>([\s\S]*?)<rt>[\s\S]*?<\/rt><\/ruby>/g,'$1').replace(/<[^>]+>/g,'');
+}
+
 function render(){
   const pv=document.getElementById('pv');
-  const [fw,fh]=PAPERS[S.paper];
-  const pw=mm(fw/2),ph=mm(fh),mg=mm(S.mg),sm=mm(8);
+  const [pw,ph]=pageDimensions();
+  const mg=mm(S.mg),sm=mm(8);
   const pages=buildPages();
   pv.innerHTML=S.pm==='imp'?renderImp(pages,pw,ph,mg,sm):renderSeq(pages,pw,ph,mg,sm);
 }
@@ -373,9 +445,23 @@ function render(){
 function buildPages(){
   const ps=[];
   ps.push({t:'blank'});ps.push({t:'cover'});
-  if(S.la==='jp'){for(let i=0;i<S.pJp.length;i++)ps.push({t:'jp',tx:S.pJp[i]});}
-  else if(S.la==='en'){for(let i=0;i<S.pEn.length;i++)ps.push({t:'en',tx:S.pEn[i]||'（翻訳待ち…）'});}
-  else{for(let i=0;i<S.pJp.length;i++){ps.push({t:'jp',tx:S.pJp[i]});ps.push({t:'en',tx:S.pEn[i]||'（翻訳待ち — ✦ AIで翻訳するをクリック）'});}}
+
+  if(S.la==='jp'){
+    const cpp=charsPerPageJp();
+    const chunks=packIntoPages(S.pJp,cpp,true);
+    for(const c of chunks)ps.push({t:'jp',tx:c});
+  }else if(S.la==='en'){
+    const cpp=charsPerPageEn();
+    const chunks=packIntoPages(S.pEn.length?S.pEn:['（翻訳待ち）'],cpp,false);
+    for(const c of chunks)ps.push({t:'en',tx:c});
+  }else{
+    // 日英交互：1段落=1ページの構成（旧仕様、対応がない場合のため残す）
+    for(let i=0;i<S.pJp.length;i++){
+      ps.push({t:'jp',tx:S.pJp[i]});
+      ps.push({t:'en',tx:S.pEn[i]||'（翻訳待ち — ✦ AIで翻訳するをクリック）'});
+    }
+  }
+
   if(S.col){ps.push({t:'col'});ps.push({t:'blank'});}
   while(ps.length%4!==0)ps.push({t:'blank'});
   return ps;
@@ -383,9 +469,16 @@ function buildPages(){
 
 function renderSeq(ps,pw,ph,mg,sm){
   let h='';
+  const R=(S.bind==='r');  // 右綴じ
   for(let i=0;i<ps.length;i+=2){
     h+=`<div class="swrap"><div class="slbl">見開き ${i/2+1}  p.${i+1}–${i+2}</div><div class="spread" style="width:${pw*2}px;height:${ph}px">`;
-    h+=mkPg(ps[i],pw,ph,mg,sm,i+1,'l')+mkPg(ps[i+1]||{t:'blank'},pw,ph,mg,sm,i+2,'r');
+    if(R){
+      // 右綴じ：左ページ=後の番号(i+2)、右ページ=先の番号(i+1)
+      h+=mkPg(ps[i+1]||{t:'blank'},pw,ph,mg,sm,i+2,'l')+mkPg(ps[i],pw,ph,mg,sm,i+1,'r');
+    }else{
+      // 左綴じ：左ページ=先の番号(i+1)、右ページ=後の番号(i+2)
+      h+=mkPg(ps[i],pw,ph,mg,sm,i+1,'l')+mkPg(ps[i+1]||{t:'blank'},pw,ph,mg,sm,i+2,'r');
+    }
     h+=`</div></div>`;
   }
   return h;
@@ -414,11 +507,13 @@ function mkPg(pg,pw,ph,mg,sm,n,side){
     return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad};${bs}"><div class="pi cvr"><div style="font-family:${S.jpF};font-size:${pt(S.jpSz+3)}px;line-height:1.4;margin-bottom:6px">${S.meta.titleJp||''}</div>${S.la!=='jp'?`<div style="font-family:${S.enF};font-size:${pt(S.enSz+1)}px;color:#666;font-style:italic;margin-bottom:14px">${S.meta.titleEn||''}</div>`:''}<div style="width:36px;height:.5px;background:#ccc;margin:10px auto"></div><div style="font-family:${S.jpF};font-size:${jf}px;color:#666">${S.meta.authorJp||''}</div>${S.la!=='jp'?`<div style="font-family:${S.enF};font-size:${ef}px;color:#999;font-style:italic">${S.meta.authorEn||''}</div>`:''}<div style="margin-top:auto;font-size:9px;color:#ccc">青空文庫</div></div></div>`;
   }
   if(pg.t==='jp'){
-    const tx=S.ruby?pg.tx:strip(pg.tx);
-    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc;font-family:${S.jpF}">${S.meta.titleJp||''}</span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="vtext" style="font-family:${S.jpF};font-size:${jf}px">${tx}</div></div></div></div>`;
+    const raw=S.ruby?pg.tx:strip(pg.tx);
+    const parsHtml=raw.split(/\n\n+/).map(p=>`<p>${p}</p>`).join('');
+    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc;font-family:${S.jpF}">${S.meta.titleJp||''}</span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="vtext" style="font-family:${S.jpF};font-size:${jf}px">${parsHtml}</div></div></div></div>`;
   }
   if(pg.t==='en'){
-    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc"></span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="htext" style="font-family:${S.enF};font-size:${ef}px">${pg.tx||''}</div></div></div></div>`;
+    const parsHtmlEn=(pg.tx||'').split(/\n\n+/).map(p=>`<p>${p}</p>`).join('');
+    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc"></span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="htext" style="font-family:${S.enF};font-size:${ef}px">${parsHtmlEn}</div></div></div></div>`;
   }
   if(pg.t==='col'){
     const c=S.la!=='jp'?`${(S.meta.colophonJp||'').split('\n').join('<br>')}<br><br>${(S.meta.colophonEn||'').split('\n').join('<br>')}`:( S.meta.colophonJp||'').split('\n').join('<br>');
@@ -459,6 +554,7 @@ function bindTG(sel,fn){
 bindTG('[data-la]',v=>{S.la=v;render();});
 bindTG('[data-ru]',v=>{S.ruby=v==='on';render();});
 bindTG('[data-pa]',v=>{S.paper=v;render();});
+bindTG('[data-fold]',v=>{S.fold=parseInt(v);render();});
 bindTG('[data-bi]',v=>{S.bind=v;render();});
 bindTG('[data-cv]',v=>{S.cv=v;render();});
 bindTG('[data-pn]',v=>{S.pn=v==='on';render();});
