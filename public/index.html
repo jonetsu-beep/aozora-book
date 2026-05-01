@@ -238,7 +238,7 @@ async function doSearch(){
   setSt('lst','検索中...','inf');
   document.getElementById('sr').innerHTML='';
   try{
-    const r=await fetch(`/api/aozora/books?title=${encodeURIComponent(q)}`);
+    const r=await fetch(`/api/aozora?action=search&title=${encodeURIComponent(q)}`);
     if(!r.ok)throw new Error('status '+r.status);
     const d=await r.json();
     const books=d.books||d;
@@ -254,7 +254,7 @@ async function loadBook(id,title,author){
   setSt('lst',`「${title}」を読み込み中...`,'inf');
   document.getElementById('sr').innerHTML='';
   try{
-    const r=await fetch(`/api/aozora/books/${id}/content`);
+    const r=await fetch(`/api/aozora?action=content&book_id=${id}`);
     if(!r.ok)throw new Error('status '+r.status);
     const text=await r.text();
     const paras=parseAozora(text);
