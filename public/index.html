@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>青空製本 — Bartlebe Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Shippori+Mincho:wght@400;700&family=Zen+Old+Mincho:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=M+PLUS+1p:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP',sans-serif;background:#f0ede8;display:flex;flex-direction:column;min-height:100vh;font-size:13px;color:#1a1a1a}
+ruby rt{font-size:.5em;line-height:1}
+header{background:#1a1a1a;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200}
+header h1{font-size:15px;font-weight:700;letter-spacing:1px}
+header span{font-size:10px;color:#888}
+.main{display:flex;flex:1;min-height:0;overflow:hidden}
+.sidebar{width:270px;min-width:270px;background:#f7f6f2;border-right:1px solid #ddd;overflow-y:auto}
+.sec{border-bottom:1px solid #e8e6e0;padding:14px}
+.sec h2{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:10px}
+label{display:block;font-size:11px;color:#666;margin-bottom:3px;margin-top:8px}
+label:first-of-type{margin-top:0}
+select,input[type=text]{width:100%;font-size:12px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;font-family:inherit}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;appearance:none}
+input[type=range]{width:100%;cursor:pointer;margin:2px 0}
+.rrow{display:flex;align-items:center;gap:8px}
+.rrow input{flex:1}
+.rval{min-width:36px;text-align:right;font-size:12px;font-weight:500}
+.fprev{margin-top:6px;padding:8px;background:#fff;border:1px solid #eee;border-radius:4px;font-size:13px;min-height:34px;line-height:1.7;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.trow{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+.tb{flex:1;min-width:44px;padding:5px 3px;border:1px solid #ddd;border-radius:4px;background:#fff;font-size:11px;cursor:pointer;text-align:center;font-family:inherit;transition:background .1s,color .1s}
+.tb.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.abtn{width:100%;padding:9px;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.abtn+.abtn{margin-top:5px}
+.btn-l{background:#2d6a4f;color:#fff}
+.btn-l:hover{background:#1b4332}
+.btn-l:disabled{background:#aaa;cursor:not-allowed}
+.btn-t{background:#1a1a1a;color:#fff}
+.btn-t:hover:not(:disabled){background:#333}
+.btn-t:disabled{background:#aaa;cursor:not-allowed}
+.btn-p{background:#2a5caa;color:#fff}
+.btn-p:hover{background:#1d4080}
+.st{font-size:10.5px;margin-top:6px;padding:4px 6px;border-radius:3px;min-height:18px;line-height:1.5}
+.ok{color:#1b4332;background:#d8f3dc}
+.er{color:#7b2020;background:#fde8e8}
+.inf{color:#1a3a5c;background:#dbeafe}
+.wn{color:#7a4f00;background:#fef3cd}
+.note{font-size:10px;color:#888;line-height:1.6;padding-top:5px}
+.sr{margin-top:5px}
+.sr-item{padding:5px 6px;border:1px solid #ddd;border-radius:3px;margin-top:3px;background:#fff;cursor:pointer;font-size:11px}
+.sr-item:hover{background:#f0f0f0}
+.preview{flex:1;background:#ddd9d0;overflow:auto;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:20px}
+.swrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.slbl{font-size:10px;color:#aaa;letter-spacing:.8px}
+.spread{display:flex;box-shadow:0 3px 16px rgba(0,0,0,.22);border:1px solid #bbb}
+.page{background:#fff;overflow:hidden;flex-shrink:0}
+.page.pl{border-right:.5px solid #ddd}
+.page.pr{border-left:.5px solid #ddd}
+.pi{height:100%;display:flex;flex-direction:column}
+.ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.5px solid #eee;padding-bottom:3px;margin-bottom:5px;flex-shrink:0}
+.pb{flex:1;overflow:hidden}
+.vtext{writing-mode:vertical-rl;text-orientation:mixed;height:100%;overflow:hidden;line-height:2;word-break:break-all}
+.htext{line-height:1.85;overflow:hidden;height:100%}
+.cvr{justify-content:center;align-items:center;text-align:center;padding:20px}
+@media print{
+  header,.sidebar,.slbl{display:none!important}
+  .preview{background:#fff!important;padding:0!important;gap:0!important;display:block!important}
+  .swrap{display:block!important}
+  .spread{box-shadow:none!important;border:none!important;page-break-after:always;break-after:page;display:flex!important}
+  .page{border:none!important}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>📖 青空製本</h1>
+  <span>Bartlebe Book v0.3</span>
+</header>
+<div class="main">
+<div class="sidebar">
+
+  <div class="sec">
+    <h2>作品（青空文庫）</h2>
+    <label>タイトルや著者で検索</label>
+    <input type="text" id="sq" placeholder="例：草枕　芥川　坊っちゃん">
+    <button class="abtn btn-l" style="margin-top:5px" onclick="doSearch()">🔍 検索して読み込む</button>
+    <div class="sr" id="sr"></div>
+    <div class="st inf" id="lst">デモテキスト（草枕）を表示中</div>
+  </div>
+
+  <div class="sec">
+    <h2>翻訳</h2>
+    <label>翻訳先の言語</label>
+    <select id="lang">
+      <option value="English">英語 English</option>
+      <option value="Simplified Chinese">中国語（簡体）</option>
+      <option value="Korean">韓国語 한국어</option>
+      <option value="French">フランス語 Français</option>
+    </select>
+    <label>レイアウト</label>
+    <div class="trow">
+      <button class="tb" data-la="jp">日本語<br>のみ</button>
+      <button class="tb on" data-la="bi">日英<br>交互</button>
+      <button class="tb" data-la="en">訳文<br>のみ</button>
+    </div>
+    <button class="abtn btn-t" id="bt" onclick="doTranslate()" style="margin-top:10px">✦ AIで翻訳する</button>
+    <div class="st" id="tst"></div>
+    <div class="note" id="cnote"></div>
+  </div>
+
+  <div class="sec">
+    <h2>日本語フォント</h2>
+    <label>書体</label>
+    <select id="jpt" onchange="switchJpType()">
+      <option value="m">明朝体</option>
+      <option value="g">ゴシック体</option>
+    </select>
+    <label>フォント</label>
+    <select id="jpf" onchange="S.jpF=this.value;updPrev('jp');render()">
+      <option value="'Noto Serif JP',serif" data-t="m">Noto Serif JP ★推奨</option>
+      <option value="'Shippori Mincho',serif" data-t="m">Shippori Mincho</option>
+      <option value="'Zen Old Mincho',serif" data-t="m">Zen Old Mincho</option>
+      <option value="'Noto Sans JP',sans-serif" data-t="g">Noto Sans JP</option>
+      <option value="'M PLUS 1p',sans-serif" data-t="g">M PLUS 1p</option>
+      <option value="'Zen Kaku Gothic New',sans-serif" data-t="g">Zen Kaku Gothic New</option>
+    </select>
+    <div class="fprev" id="jpp">山路を登りながら、こう考えた。</div>
+    <label>文字サイズ</label>
+    <div class="rrow"><input type="range" id="jps" min="6" max="12" step=".5" value="9" oninput="S.jpSz=parseFloat(this.value);document.getElementById('jpsv').textContent=S.jpSz+'pt';updPrev('jp');render()"><span class="rval" id="jpsv">9pt</span></div>
+    <label>ルビ</label>
+    <div class="trow">
+      <button class="tb on" data-ru="on">あり</button>
+      <button class="tb" data-ru="off">なし</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>翻訳フォント</h2>
+    <label>書体</label>
+    <select id="ent" onchange="switchEnType()">
+      <option value="s">セリフ体</option>
+      <option value="ss">サンセリフ体</option>
+    </select>
+    <label>フォント</label>
+    <select id="enf" onchange="S.enF=this.value;updPrev('en');render()">
+      <option value="'Lora',serif" data-t="s">Lora ★推奨</option>
+      <option value="'Merriweather',serif" data-t="s">Merriweather</option>
+      <option value="'Playfair Display',serif" data-t="s">Playfair Display</option>
+      <option value="'Inter',sans-serif" data-t="ss">Inter</option>
+      <option value="'Nunito',sans-serif" data-t="ss">Nunito</option>
+      <option value="'Open Sans',sans-serif" data-t="ss">Open Sans</option>
+    </select>
+    <div class="fprev" id="enp" style="font-family:'Lora',serif">As I climbed the mountain path...</div>
+    <label>文字サイズ</label>
+    <div class="rrow"><input type="range" id="ens" min="6" max="12" step=".5" value="8" oninput="S.enSz=parseFloat(this.value);document.getElementById('ensv').textContent=S.enSz+'pt';updPrev('en');render()"><span class="rval" id="ensv">8pt</span></div>
+  </div>
+
+  <div class="sec">
+    <h2>用紙・製本</h2>
+    <label>用紙サイズ</label>
+    <div class="pgrid">
+      <button class="tb" data-pa="A3">A3</button>
+      <button class="tb on" data-pa="A4">A4</button>
+      <button class="tb" data-pa="B4">B4</button>
+      <button class="tb" data-pa="B5">B5</button>
+      <button class="tb" data-pa="Letter">Letter</button>
+    </div>
+    <label>綴じ方向</label>
+    <div class="trow">
+      <button class="tb on" data-bi="r">右綴じ</button>
+      <button class="tb" data-bi="l">左綴じ</button>
+    </div>
+    <label>綴じ代</label>
+    <div class="rrow"><input type="range" id="mg" min="5" max="20" step="1" value="10" oninput="S.mg=parseInt(this.value);document.getElementById('mgv').textContent=S.mg+'mm';render()"><span class="rval" id="mgv">10mm</span></div>
+    <label>表紙デザイン</label>
+    <div class="trow">
+      <button class="tb on" data-cv="simple">シンプル</button>
+      <button class="tb" data-cv="ruled">罫線</button>
+      <button class="tb" data-cv="minimal">極簡</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>その他</h2>
+    <label>ページ番号</label>
+    <div class="trow">
+      <button class="tb on" data-pn="on">あり</button>
+      <button class="tb" data-pn="off">なし</button>
+    </div>
+    <label>奥付</label>
+    <div class="trow">
+      <button class="tb on" data-co="on">あり</button>
+      <button class="tb" data-co="off">なし</button>
+    </div>
+    <label>印刷モード</label>
+    <div class="trow">
+      <button class="tb on" data-pm="seq">通常表示</button>
+      <button class="tb" data-pm="imp">製本順</button>
+    </div>
+    <button class="abtn btn-p" onclick="window.print()" style="margin-top:10px">🖨 印刷 / PDF出力</button>
+    <div class="note" style="margin-top:6px">「製本順」で出力し、各シートを折り畳んで重ねてホチキス留めするだけで冊子になります。</div>
+  </div>
+
+</div>
+<div class="preview" id="pv"></div>
+</div>
+
+<script>
+const PAPERS={A4:[297,210],A3:[420,297],B4:[364,257],B5:[257,182],Letter:[279,216]};
+const mm=m=>Math.round(m*96/25.4), pt=p=>Math.round(p*96/72);
+
+const S={jpF:"'Noto Serif JP',serif",enF:"'Lora',serif",jpSz:9,enSz:8,paper:'A4',bind:'r',mg:10,la:'bi',ruby:true,pn:true,col:true,cv:'simple',pm:'seq',pJp:[],pEn:[],meta:{}};
+
+const DEMO={
+  titleJp:'草枕',titleEn:'Kusa Makura',authorJp:'夏目漱石',authorEn:'Natsume Soseki',
+  colophonJp:'底本：「夏目漱石全集3」ちくま文庫\n1987年12月1日第1刷\n青空文庫 https://www.aozora.gr.jp',
+  colophonEn:'Source: Natsume Soseki Complete Works Vol.3\nChikuma Bunko, 1987\nAozora Bunko https://www.aozora.gr.jp',
+  pJp:[
+    '　山路《やまじ》を登《のぼ》りながら、こう考《かんが》えた。智《ち》に働《はたら》けば角《かど》が立《た》つ。情《じょう》に棹《さお》させば流《なが》される。意地《いじ》を通《とお》せば窮屈《きゅうくつ》だ。とかくに人《ひと》の世《よ》は住《す》みにくい。',
+    '　住《す》みにくさが高《こう》じると、安《やす》い所《ところ》へ引《ひ》き越《こ》したくなる。どこへ越《こ》しても住《す》みにくいと悟《さと》った時《とき》、詩《し》が生《う》まれて、画《え》が出来《でき》る。',
+    '　人《ひと》の世《よ》を作《つく》ったものは神《かみ》でもなければ鬼《おに》でもない。やはり向《む》こう三軒両隣《さんげんりょうどなり》にちらちらするただの人《ひと》である。ただの人《ひと》が作《つく》った人《ひと》の世《よ》が住《す》みにくいからとて、越《こ》す国《くに》はあるまい。あれば人《ひと》でなしの国《くに》へ行《い》くばかりだ。人《ひと》でなしの国《くに》は人《ひと》の世《よ》よりもなお住《す》みにくかろう。',
+    '　越《こ》す事《こと》のならぬ世《よ》が住《す》みにくければ、住《す》みにくい所《ところ》をどれほどか、寛容《かんよう》げて、束《つか》の間《ま》の命《いのち》を、束《つか》の間《ま》でも住《す》みよくせねばならぬ。ここに詩人《しじん》という天職《てんしょく》が出来《でき》て、ここに画家《がか》という使命《しめい》が降《くだ》る。あらゆる芸術《げいじゅつ》の士《し》は人《ひと》の世《よ》を長閑《のどか》にし、人《ひと》の心《こころ》を豊《ゆた》かにするが故《ゆえ》に尊《とうと》い。',
+  ],
+  pEn:[
+    '　As I climbed the mountain path, I thought: If you act on intellect, you create friction. If you follow sentiment, you are swept away. If you insist on your own principles, you become constrained. In short, the human world is a difficult place in which to live.',
+    '　When the difficulty of living becomes too great, one wishes to move somewhere cheaper. When one realizes that it will be just as difficult no matter where one moves, poetry is born and paintings come into being.',
+    '　The human world was made neither by gods nor by demons. It was made by ordinary people — those unremarkable souls who flicker past in the houses across the lane and on either side. Just because this human world, made by ordinary people, is difficult to live in, there is no country to flee to. If there were, it would be a land of the inhuman — and that would be even harder to endure.',
+    '　If the world one cannot leave is difficult to live in, one must soften those difficulties as much as possible, and make this brief life a little more comfortable, even if only briefly. Herein lies the calling of the poet, and here the mission of the painter descends. All who practice the arts are noble, because they bring serenity to the human world and richness to the human heart.',
+  ]
+};
+
+function loadDemo(){S.meta=DEMO;S.pJp=DEMO.pJp;S.pEn=DEMO.pEn;setSt('lst','デモテキスト（草枕 冒頭）を表示中','inf');updateCN();render();}
+
+async function doSearch(){
+  const q=document.getElementById('sq').value.trim();
+  if(!q){setSt('lst','キーワードを入力してください','wn');return;}
+  setSt('lst','検索中...','inf');
+  document.getElementById('sr').innerHTML='';
+  try{
+    const r=await fetch(`/api/aozora/books?title=${encodeURIComponent(q)}`);
+    if(!r.ok)throw new Error('status '+r.status);
+    const d=await r.json();
+    const books=d.books||d;
+    if(!books?.length){setSt('lst','見つかりませんでした','wn');return;}
+    setSt('lst',`${books.length}件見つかりました。選択してください。`,'ok');
+    document.getElementById('sr').innerHTML=books.slice(0,8).map(b=>
+      `<div class="sr-item" onclick="loadBook('${b.book_id}','${esc(b.title)}','${esc(b.author)}')"><strong>${b.title||'（無題）'}</strong> <span style="color:#888">— ${b.author||''}</span></div>`
+    ).join('');
+  }catch(e){setSt('lst','青空APIに接続できませんでした（デモテキストを表示）','er');console.error(e);}
+}
+
+async function loadBook(id,title,author){
+  setSt('lst',`「${title}」を読み込み中...`,'inf');
+  document.getElementById('sr').innerHTML='';
+  try{
+    const r=await fetch(`/api/aozora/books/${id}/content`);
+    if(!r.ok)throw new Error('status '+r.status);
+    const text=await r.text();
+    const paras=parseAozora(text);
+    S.pJp=paras;S.pEn=[];
+    S.meta={titleJp:title,titleEn:title,authorJp:author,authorEn:author,
+      colophonJp:`青空文庫 https://www.aozora.gr.jp\n作品ID: ${id}`,
+      colophonEn:`Aozora Bunko https://www.aozora.gr.jp\nBook ID: ${id}`};
+    setSt('lst',`「${title}」${paras.length}段落を読み込みました`,'ok');
+    updateCN();render();
+  }catch(e){setSt('lst','本文取得に失敗しました','er');loadDemo();}
+}
+
+function parseAozora(raw){
+  let t=raw.replace(/^[\s\S]*?-------\r?\n/,'').replace(/底本.*$/s,'');
+  t=t.replace(/｜([^《\n]+?)《([^》]+?)》/g,'<ruby>$1<rt>$2</rt></ruby>')
+     .replace(/([一-龯々]{1,6})《([^》]+?)》/g,'<ruby>$1<rt>$2</rt></ruby>');
+  const lines=t.split(/\r?\n/);
+  const ps=[];let buf='';
+  for(const l of lines){
+    const ll=l.trim();
+    if(!ll){if(buf.trim())ps.push('　'+buf.trim());buf='';}
+    else buf+=(buf?'':'')+ll;
+  }
+  if(buf.trim())ps.push('　'+buf.trim());
+  return ps.filter(p=>p.replace(/<[^>]+>/g,'').length>5).slice(0,80);
+}
+
+function strip(h){return h.replace(/<ruby>([\s\S]*?)<rt>[\s\S]*?<\/rt><\/ruby>/g,'$1');}
+
+const CK=(lang,t)=>{let h=0;for(let i=0;i<Math.min(t.length,180);i++)h=(h*31+t.charCodeAt(i))&0x7fffffff;return `azt_${lang}_${h}`;};
+
+async function doTranslate(){
+  if(S.la==='jp'){setSt('tst','日本語のみモードは翻訳不要です','wn');return;}
+  if(!S.pJp.length){setSt('tst','作品が読み込まれていません','er');return;}
+  document.getElementById('bt').disabled=true;
+  const lang=document.getElementById('lang').value;
+  S.pEn=new Array(S.pJp.length).fill('');
+  const todo=[];
+  for(let i=0;i<S.pJp.length;i++){
+    const pl=strip(S.pJp[i]);
+    const c=localStorage.getItem(CK(lang,pl));
+    if(c){S.pEn[i]=c;}else{todo.push(i);}
+  }
+  setSt('tst',`翻訳中... 0/${todo.length}段落 (キャッシュ:${S.pJp.length-todo.length}段落)`,'inf');
+  if(!todo.length){setSt('tst',`全${S.pJp.length}段落 キャッシュから取得（費用:¥0）`,'ok');document.getElementById('bt').disabled=false;render();return;}
+  let done=0;
+  for(const i of todo){
+    const pl=strip(S.pJp[i]);
+    try{
+      const r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:pl,lang})});
+      const d=await r.json();
+      if(!r.ok)throw new Error(d.error||'API error');
+      S.pEn[i]='　'+d.translation;
+      localStorage.setItem(CK(lang,pl),S.pEn[i]);
+      done++;
+      setSt('tst',`翻訳中... ${done}/${todo.length}段落`,'inf');
+      if(done%3===0)render();
+    }catch(e){S.pEn[i]='[翻訳エラー: '+e.message+']';if(e.message.includes('key'))break;}
+  }
+  setSt('tst',`翻訳完了 — ${S.pJp.length}段落`,'ok');
+  document.getElementById('bt').disabled=false;render();
+}
+
+function updateCN(){
+  const n=S.pJp.length,est=Math.round(n*80*1.5/1e6*3*150+n*80*0.7*2/1e6*15*150);
+  document.getElementById('cnote').textContent=`この作品の翻訳費用（初回）: 約¥${est}〜¥${est*2}。2回目以降はキャッシュで無料。`;
+}
+
+function render(){
+  const pv=document.getElementById('pv');
+  const [fw,fh]=PAPERS[S.paper];
+  const pw=mm(fw/2),ph=mm(fh),mg=mm(S.mg),sm=mm(8);
+  const pages=buildPages();
+  pv.innerHTML=S.pm==='imp'?renderImp(pages,pw,ph,mg,sm):renderSeq(pages,pw,ph,mg,sm);
+}
+
+function buildPages(){
+  const ps=[];
+  ps.push({t:'blank'});ps.push({t:'cover'});
+  if(S.la==='jp'){for(let i=0;i<S.pJp.length;i++)ps.push({t:'jp',tx:S.pJp[i]});}
+  else if(S.la==='en'){for(let i=0;i<S.pEn.length;i++)ps.push({t:'en',tx:S.pEn[i]||'（翻訳待ち…）'});}
+  else{for(let i=0;i<S.pJp.length;i++){ps.push({t:'jp',tx:S.pJp[i]});ps.push({t:'en',tx:S.pEn[i]||'（翻訳待ち — ✦ AIで翻訳するをクリック）'});}}
+  if(S.col){ps.push({t:'col'});ps.push({t:'blank'});}
+  while(ps.length%4!==0)ps.push({t:'blank'});
+  return ps;
+}
+
+function renderSeq(ps,pw,ph,mg,sm){
+  let h='';
+  for(let i=0;i<ps.length;i+=2){
+    h+=`<div class="swrap"><div class="slbl">見開き ${i/2+1}  p.${i+1}–${i+2}</div><div class="spread" style="width:${pw*2}px;height:${ph}px">`;
+    h+=mkPg(ps[i],pw,ph,mg,sm,i+1,'l')+mkPg(ps[i+1]||{t:'blank'},pw,ph,mg,sm,i+2,'r');
+    h+=`</div></div>`;
+  }
+  return h;
+}
+
+function renderImp(ps,pw,ph,mg,sm){
+  const n=ps.length;
+  let h=`<div class="swrap"><div class="slbl" style="color:#e8a030">⚠ 製本順モード — 印刷して折り畳むと冊子になります</div></div>`;
+  for(let k=1;k<=n/4;k++){
+    const fl=ps[n-2*(k-1)-1],fr=ps[2*(k-1)],bl=ps[2*(k-1)+1],br=ps[n-2*(k-1)-2];
+    h+=`<div class="swrap"><div class="slbl">シート${k} 表面</div><div class="spread" style="width:${pw*2}px;height:${ph}px">${mkPg(fl,pw,ph,mg,sm,n-2*(k-1),'l')}${mkPg(fr,pw,ph,mg,sm,2*(k-1)+1,'r')}</div>`;
+    h+=`<div class="slbl" style="margin-top:8px">シート${k} 裏面（上下反転して印刷）</div><div class="spread" style="width:${pw*2}px;height:${ph}px">${mkPg(bl,pw,ph,mg,sm,2*(k-1)+2,'l')}${mkPg(br,pw,ph,mg,sm,n-2*(k-1)-1,'r')}</div></div>`;
+  }
+  return h;
+}
+
+function mkPg(pg,pw,ph,mg,sm,n,side){
+  const R=(S.bind==='r');
+  const pL=(side==='l'&&R)?sm+'px':(side==='r'&&!R)?sm+'px':mg+'px';
+  const pR=(side==='r'&&R)?mg+'px':(side==='l'&&!R)?mg+'px':sm+'px';
+  const pad=`${sm}px ${pR} ${sm}px ${pL}`;
+  const jf=pt(S.jpSz),ef=pt(S.enSz);
+  if(pg.t==='blank')return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"></div>`;
+  if(pg.t==='cover'){
+    let bs='';if(S.cv==='ruled')bs='border:1.5px solid #1a1a1a;';if(S.cv==='minimal')bs='border-top:2.5px solid #1a1a1a;border-bottom:2.5px solid #1a1a1a;';
+    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad};${bs}"><div class="pi cvr"><div style="font-family:${S.jpF};font-size:${pt(S.jpSz+3)}px;line-height:1.4;margin-bottom:6px">${S.meta.titleJp||''}</div>${S.la!=='jp'?`<div style="font-family:${S.enF};font-size:${pt(S.enSz+1)}px;color:#666;font-style:italic;margin-bottom:14px">${S.meta.titleEn||''}</div>`:''}<div style="width:36px;height:.5px;background:#ccc;margin:10px auto"></div><div style="font-family:${S.jpF};font-size:${jf}px;color:#666">${S.meta.authorJp||''}</div>${S.la!=='jp'?`<div style="font-family:${S.enF};font-size:${ef}px;color:#999;font-style:italic">${S.meta.authorEn||''}</div>`:''}<div style="margin-top:auto;font-size:9px;color:#ccc">青空文庫</div></div></div>`;
+  }
+  if(pg.t==='jp'){
+    const tx=S.ruby?pg.tx:strip(pg.tx);
+    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc;font-family:${S.jpF}">${S.meta.titleJp||''}</span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="vtext" style="font-family:${S.jpF};font-size:${jf}px">${tx}</div></div></div></div>`;
+  }
+  if(pg.t==='en'){
+    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc"></span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="htext" style="font-family:${S.enF};font-size:${ef}px">${pg.tx||''}</div></div></div></div>`;
+  }
+  if(pg.t==='col'){
+    const c=S.la!=='jp'?`${(S.meta.colophonJp||'').split('\n').join('<br>')}<br><br>${(S.meta.colophonEn||'').split('\n').join('<br>')}`:( S.meta.colophonJp||'').split('\n').join('<br>');
+    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi"><div style="flex:1"></div><div style="font-size:8.5px;color:#999;line-height:1.9;margin-top:auto;padding-top:10px;border-top:.5px solid #eee;font-family:${S.jpF}">${c}</div></div></div>`;
+  }
+  return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"></div>`;
+}
+
+function setSt(id,msg,cls=''){const e=document.getElementById(id);if(e){e.textContent=msg;e.className='st '+(cls||'');}}
+function esc(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+function updPrev(t){
+  if(t==='jp'){const e=document.getElementById('jpp');e.style.fontFamily=S.jpF;e.style.fontSize=pt(S.jpSz)+'px';}
+  else{const e=document.getElementById('enp');e.style.fontFamily=S.enF;e.style.fontSize=pt(S.enSz)+'px';}
+}
+function switchJpType(){
+  const t=document.getElementById('jpt').value;
+  const sel=document.getElementById('jpf');
+  [...sel.options].forEach(o=>o.hidden=o.dataset.t!==t);
+  const f=[...sel.options].find(o=>!o.hidden);
+  if(f){sel.value=f.value;S.jpF=f.value;}
+  updPrev('jp');render();
+}
+function switchEnType(){
+  const t=document.getElementById('ent').value;
+  const sel=document.getElementById('enf');
+  [...sel.options].forEach(o=>o.hidden=o.dataset.t!==t);
+  const f=[...sel.options].find(o=>!o.hidden);
+  if(f){sel.value=f.value;S.enF=f.value;}
+  updPrev('en');render();
+}
+function bindTG(sel,fn){
+  document.querySelectorAll(sel).forEach(b=>b.addEventListener('click',function(){
+    document.querySelectorAll(sel).forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');
+    fn(Object.values(this.dataset)[0]);
+  }));
+}
+bindTG('[data-la]',v=>{S.la=v;render();});
+bindTG('[data-ru]',v=>{S.ruby=v==='on';render();});
+bindTG('[data-pa]',v=>{S.paper=v;render();});
+bindTG('[data-bi]',v=>{S.bind=v;render();});
+bindTG('[data-cv]',v=>{S.cv=v;render();});
+bindTG('[data-pn]',v=>{S.pn=v==='on';render();});
+bindTG('[data-co]',v=>{S.col=v==='on';render();});
+bindTG('[data-pm]',v=>{S.pm=v;render();});
+document.getElementById('sq').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+loadDemo();
+</script>
+</body>
+</html>

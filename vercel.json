@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/api/aozora/:path*", "destination": "/api/aozora?path=:path*" }
+  ]
+}
