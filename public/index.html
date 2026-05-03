@@ -60,9 +60,9 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
 .pi{height:100%;display:flex;flex-direction:column}
 .ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.5px solid #eee;padding-bottom:3px;margin-bottom:5px;flex-shrink:0}
 .pb{flex:1;overflow:hidden}
-.vtext{writing-mode:vertical-rl;text-orientation:mixed;height:100%;width:100%;overflow:hidden;line-height:1.85;word-break:break-all}
-.vtext p{margin:0;text-indent:1em}
-.vtext p+p{margin-inline-start:0}
+.vtext{writing-mode:vertical-rl;text-orientation:mixed;height:100%;width:100%;overflow:hidden;line-height:1.85;word-break:break-all;column-fill:auto;column-gap:6px}
+.vtext p{margin:0;text-indent:1em;break-inside:avoid-column;break-before:auto}
+.htext{height:100%;overflow:hidden;line-height:1.55;column-fill:auto;column-gap:14px}
 .htext p{margin:0 0 .8em;text-indent:1.5em}
 .htext{line-height:1.85;overflow:hidden;height:100%}
 .cvr{justify-content:center;align-items:center;text-align:center;padding:20px}
@@ -161,19 +161,15 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
 
   <div class="sec">
     <h2>用紙・製本</h2>
-    <label>用紙サイズ</label>
-    <div class="pgrid">
-      <button class="tb" data-pa="A3">A3</button>
-      <button class="tb on" data-pa="A4">A4</button>
-      <button class="tb" data-pa="B4">B4</button>
-      <button class="tb" data-pa="B5">B5</button>
-      <button class="tb" data-pa="Letter">Letter</button>
-    </div>
-    <label>製本サイズ</label>
-    <div class="trow">
-      <button class="tb on" data-fold="2">半分（用紙の1/2）</button>
-      <button class="tb" data-fold="4">1/4（小冊子）</button>
-    </div>
+    <label>印刷フォーマット</label>
+    <select id="fmt" style="width:100%;font-size:11px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;font-family:inherit">
+      <option value="A4-2up-single">A4／片面／2面付（仕上がりA5）</option>
+      <option value="A4-2up-duplex" selected>A4／両面／2面付（仕上がりA5）</option>
+      <option value="A4-4up-duplex">A4／両面／4面付（仕上がりA6・小冊子）</option>
+      <option value="A3-2up-duplex">A3／両面／4面付（仕上がりA5）</option>
+      <option value="A3-4up-duplex">A3／両面／8面付（仕上がりA6・小冊子）</option>
+    </select>
+    <div class="note" style="margin-top:4px">仕上がりサイズ：A5＝文庫より少し大きい、A6＝文庫サイズ</div>
     <label>綴じ方向</label>
     <div class="trow">
       <button class="tb on" data-bi="r">右綴じ</button>
@@ -218,7 +214,7 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
 const PAPERS={A4:[297,210],A3:[420,297],B4:[364,257],B5:[257,182],Letter:[279,216]};
 const mm=m=>Math.round(m*96/25.4), pt=p=>Math.round(p*96/72);
 
-const S={jpF:"'Noto Serif JP',serif",enF:"'Lora',serif",jpSz:9,enSz:8,paper:'A4',fold:2,bind:'r',mg:10,la:'jp',ruby:true,pn:true,col:true,cv:'simple',pm:'seq',pJp:[],pEn:[],meta:{}};
+const S={jpF:"'Noto Serif JP',serif",enF:"'Lora',serif",jpSz:9,enSz:8,format:'A4-2up-duplex',paper:'A4',fold:2,bind:'r',mg:10,la:'jp',ruby:true,pn:true,col:true,cv:'simple',pm:'seq',pJp:[],pEn:[],meta:{}};
 
 const DEMO={
   titleJp:'草枕',titleEn:'Kusa Makura',authorJp:'夏目漱石',authorEn:'Natsume Soseki',
@@ -370,40 +366,64 @@ function updateCN(){
   document.getElementById('cnote').textContent=`この作品の翻訳費用（初回）: 約¥${est}〜¥${est*2}。2回目以降はキャッシュで無料。`;
 }
 
+// 印刷フォーマット → 用紙・面付・仕上がりサイズの定義
+// PAPERS[paper] = [長辺mm, 短辺mm]
+// fold = 何回折るか（2=半分=A4→A5、4=1/4=A4→A6）
+const FORMATS = {
+  'A4-2up-single': {paper:'A4', fold:2, duplex:false, npp:2,  finish:'A5', label:'A4／片面／2面付（仕上がりA5）'},
+  'A4-2up-duplex': {paper:'A4', fold:2, duplex:true,  npp:4,  finish:'A5', label:'A4／両面／2面付（仕上がりA5）'},
+  'A4-4up-duplex': {paper:'A4', fold:4, duplex:true,  npp:8,  finish:'A6', label:'A4／両面／4面付（仕上がりA6・小冊子）'},
+  'A3-2up-duplex': {paper:'A3', fold:2, duplex:true,  npp:8,  finish:'A5', label:'A3／両面／4面付（仕上がりA5）'},
+  'A3-4up-duplex': {paper:'A3', fold:4, duplex:true,  npp:16, finish:'A6', label:'A3／両面／8面付（仕上がりA6・小冊子）'},
+};
+
+function applyFormat(){
+  const f = FORMATS[S.format];
+  if(!f) return;
+  S.paper = f.paper;
+  S.fold = f.fold;
+}
+
 function pageDimensions(){
   const [fw,fh]=PAPERS[S.paper];
-  // S.fold === 2: 用紙の半分が1ページ（普通の見開き製本）
-  // S.fold === 4: 用紙の1/4が1ページ（小冊子）
+  // fold=2: 用紙の長辺を半分に折る → ページサイズは [短辺, 長辺/2]（縦長）
+  //   A4(297×210) → A5(148×210) ← 縦長
+  // fold=4: さらに半分 → ページサイズは [短辺/2, 長辺/2]（縦長を維持）
+  //   A4(297×210) → A6(105×148) ← 縦長
   if(S.fold===4){
-    return [mm(fw/2), mm(fh/2)];
+    // 縦長維持：[長辺/2, 短辺] ではなく、[短辺/2, 長辺/2]
+    return [mm(fh/2), mm(fw/2)];
   }
   return [mm(fw/2), mm(fh)];
 }
 
-// 1ページに収まる目安文字数を計算
+// 1ページに収まる目安文字数（multi-column 前提で計算）
 function charsPerPageJp(){
   const [pw,ph]=pageDimensions();
   const fontPx=pt(S.jpSz);
   const lineH=fontPx*1.85;
-  const pad=mm(S.mg)+mm(8);  // 余白の合計（粗い見積もり）
-  const usableH=ph-2*mm(8)-fontPx*2;  // ヘッダー高さも引く
-  const usableW=pw-2*pad;
-  const charsPerCol=Math.max(10,Math.floor(usableH/fontPx));
-  const cols=Math.max(1,Math.floor(usableW/lineH));
-  return Math.floor(charsPerCol*cols*0.85);  // 安全マージン15%
+  // 余白：綴じ代側 + 小口側
+  const padL=mm(S.mg), padS=mm(8);
+  const usableH=ph - padS*2 - fontPx*2;  // ヘッダー込み
+  const usableW=pw - padL - padS;
+  // 縦書きの「1列」= 1行縦書き、その幅 = lineH
+  const charsPerCol=Math.max(10, Math.floor(usableH/fontPx));
+  const cols=Math.max(1, Math.floor(usableW/lineH));
+  // multi-column が効いていれば、ページ幅を全部使える
+  return Math.floor(charsPerCol * cols * 0.92);  // 安全マージン8%
 }
 
 function charsPerPageEn(){
   const [pw,ph]=pageDimensions();
   const fontPx=pt(S.enSz);
   const lineH=fontPx*1.55;
-  const pad=mm(S.mg)+mm(8);
-  const usableH=ph-2*mm(8)-fontPx*2;
-  const usableW=pw-2*pad;
-  // 英文は1文字幅が約 fontPx*0.5 (proportional)
+  const padL=mm(S.mg), padS=mm(8);
+  const usableH=ph - padS*2 - fontPx*2;
+  const usableW=pw - padL - padS;
+  // 英文は文字幅 ≈ fontPx*0.5
   const charsPerLine=Math.floor(usableW/(fontPx*0.5));
   const lines=Math.floor(usableH/lineH);
-  return Math.floor(charsPerLine*lines*0.9);
+  return Math.floor(charsPerLine * lines * 0.92);
 }
 
 // 段落配列をページ単位に詰める
@@ -455,10 +475,29 @@ function buildPages(){
     const chunks=packIntoPages(S.pEn.length?S.pEn:['（翻訳待ち）'],cpp,false);
     for(const c of chunks)ps.push({t:'en',tx:c});
   }else{
-    // 日英交互：1段落=1ページの構成（旧仕様、対応がない場合のため残す）
-    for(let i=0;i<S.pJp.length;i++){
-      ps.push({t:'jp',tx:S.pJp[i]});
-      ps.push({t:'en',tx:S.pEn[i]||'（翻訳待ち — ✦ AIで翻訳するをクリック）'});
+    // 日英交互：日本語と英語の段落をペアにし、両方が1ページに収まる単位で詰める
+    const jpCpp=charsPerPageJp();
+    const enCpp=charsPerPageEn();
+    let i=0;
+    while(i<S.pJp.length){
+      let end=i, jpLen=0, enLen=0;
+      while(end<S.pJp.length){
+        const jpAdd=stripRubyText(S.pJp[end]).length;
+        const enAdd=(S.pEn[end]||'（翻訳待ち）').length;
+        // どちらかが溢れたら、これ以上詰めない
+        if(end>i && (jpLen+jpAdd>jpCpp || enLen+enAdd>enCpp)) break;
+        jpLen+=jpAdd;
+        enLen+=enAdd;
+        end++;
+        // 1段落で既に大きく溢れる場合、その段落単独で1ページ
+        if(jpLen>jpCpp*1.3 || enLen>enCpp*1.3) break;
+      }
+      if(end===i) end=i+1;  // 安全弁
+      const jpChunk=S.pJp.slice(i,end).join('\n\n');
+      const enChunk=S.pEn.slice(i,end).map(p=>p||'（翻訳待ち — ✦ AIで翻訳するをクリック）').join('\n\n');
+      ps.push({t:'jp',tx:jpChunk});
+      ps.push({t:'en',tx:enChunk});
+      i=end;
     }
   }
 
@@ -509,7 +548,9 @@ function mkPg(pg,pw,ph,mg,sm,n,side){
   if(pg.t==='jp'){
     const raw=S.ruby?pg.tx:strip(pg.tx);
     const parsHtml=raw.split(/\n\n+/).map(p=>`<p>${p}</p>`).join('');
-    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc;font-family:${S.jpF}">${S.meta.titleJp||''}</span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="vtext" style="font-family:${S.jpF};font-size:${jf}px">${parsHtml}</div></div></div></div>`;
+    // 縦書きの multi-column：1列 = フォントサイズ × 行高
+    const colW=Math.round(jf*1.85);
+    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc;font-family:${S.jpF}">${S.meta.titleJp||''}</span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="vtext" style="font-family:${S.jpF};font-size:${jf}px;column-width:${colW}px">${parsHtml}</div></div></div></div>`;
   }
   if(pg.t==='en'){
     const parsHtmlEn=(pg.tx||'').split(/\n\n+/).map(p=>`<p>${p}</p>`).join('');
@@ -553,14 +594,14 @@ function bindTG(sel,fn){
 }
 bindTG('[data-la]',v=>{S.la=v;render();});
 bindTG('[data-ru]',v=>{S.ruby=v==='on';render();});
-bindTG('[data-pa]',v=>{S.paper=v;render();});
-bindTG('[data-fold]',v=>{S.fold=parseInt(v);render();});
+document.getElementById('fmt').addEventListener('change',e=>{S.format=e.target.value;applyFormat();render();});
 bindTG('[data-bi]',v=>{S.bind=v;render();});
 bindTG('[data-cv]',v=>{S.cv=v;render();});
 bindTG('[data-pn]',v=>{S.pn=v==='on';render();});
 bindTG('[data-co]',v=>{S.col=v==='on';render();});
 bindTG('[data-pm]',v=>{S.pm=v;render();});
 document.getElementById('sq').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+applyFormat();
 loadDemo();
 </script>
 </body>
