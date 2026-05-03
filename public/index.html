@@ -60,10 +60,12 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
 .pi{height:100%;display:flex;flex-direction:column}
 .ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:.5px solid #eee;padding-bottom:3px;margin-bottom:5px;flex-shrink:0}
 .pb{flex:1;overflow:hidden}
-.vtext{writing-mode:vertical-rl;text-orientation:mixed;height:100%;width:100%;overflow:hidden;line-height:1.85;word-break:break-all;column-fill:auto;column-gap:6px}
-.vtext p{margin:0;text-indent:1em;break-inside:avoid-column;break-before:auto}
-.htext{height:100%;overflow:hidden;line-height:1.55;column-fill:auto;column-gap:14px}
+.vtext{writing-mode:vertical-rl;text-orientation:mixed;height:100%;line-height:1.85;word-break:break-all}
+.vtext p{margin:0;text-indent:1em}
+.htext{height:100%;line-height:1.55}
 .htext p{margin:0 0 .8em;text-indent:1.5em}
+/* 縦書きの自然流し込み：height固定で、widthは内容に応じて自動拡張、はみ出し分は overflow:hidden で切る */
+.pb{flex:1;overflow:hidden}
 .htext{line-height:1.85;overflow:hidden;height:100%}
 .cvr{justify-content:center;align-items:center;text-align:center;padding:20px}
 @media print{
@@ -397,20 +399,22 @@ function pageDimensions(){
   return [mm(fw/2), mm(fh)];
 }
 
-// 1ページに収まる目安文字数（multi-column 前提で計算）
+// 1ページに収まる目安文字数
+// 縦書きでは writing-mode:vertical-rl が自動的に複数列に流し込んでくれるので、
+// 単純に「ページ全体に何文字入るか」を計算すればOK
 function charsPerPageJp(){
   const [pw,ph]=pageDimensions();
   const fontPx=pt(S.jpSz);
-  const lineH=fontPx*1.85;
-  // 余白：綴じ代側 + 小口側
+  const lineH=fontPx*1.85;  // 縦書きの「列の幅」
   const padL=mm(S.mg), padS=mm(8);
-  const usableH=ph - padS*2 - fontPx*2;  // ヘッダー込み
-  const usableW=pw - padL - padS;
-  // 縦書きの「1列」= 1行縦書き、その幅 = lineH
+  const usableH=ph - padS*2 - fontPx*2;  // ヘッダーと余白を引いた高さ
+  const usableW=pw - padL - padS;        // 同・幅
+  // 縦書きでは：
+  //   1列 = usableH の高さに、fontPx間隔で文字が並ぶ → 1列の文字数 = usableH/fontPx
+  //   ページ幅に並ぶ列数 = usableW/lineH
   const charsPerCol=Math.max(10, Math.floor(usableH/fontPx));
   const cols=Math.max(1, Math.floor(usableW/lineH));
-  // multi-column が効いていれば、ページ幅を全部使える
-  return Math.floor(charsPerCol * cols * 0.92);  // 安全マージン8%
+  return Math.floor(charsPerCol * cols * 0.88);  // 安全マージン12%
 }
 
 function charsPerPageEn(){
@@ -548,9 +552,7 @@ function mkPg(pg,pw,ph,mg,sm,n,side){
   if(pg.t==='jp'){
     const raw=S.ruby?pg.tx:strip(pg.tx);
     const parsHtml=raw.split(/\n\n+/).map(p=>`<p>${p}</p>`).join('');
-    // 縦書きの multi-column：1列 = フォントサイズ × 行高
-    const colW=Math.round(jf*1.85);
-    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc;font-family:${S.jpF}">${S.meta.titleJp||''}</span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="vtext" style="font-family:${S.jpF};font-size:${jf}px;column-width:${colW}px">${parsHtml}</div></div></div></div>`;
+    return `<div class="page p${side}" style="width:${pw}px;height:${ph}px;padding:${pad}"><div class="pi">${S.pn?`<div class="ph"><span style="font-size:8px;color:#ccc;font-family:${S.jpF}">${S.meta.titleJp||''}</span><span style="font-size:8px;color:#ccc">${n}</span></div>`:''}<div class="pb"><div class="vtext" style="font-family:${S.jpF};font-size:${jf}px">${parsHtml}</div></div></div></div>`;
   }
   if(pg.t==='en'){
     const parsHtmlEn=(pg.tx||'').split(/\n\n+/).map(p=>`<p>${p}</p>`).join('');
