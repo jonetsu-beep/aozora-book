@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Shippori+Mincho:wght@400;700&family=Zen+Old+Mincho:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=M+PLUS+1p:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style id="pageStyle"></style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans JP',sans-serif;background:#f0ede8;display:flex;flex-direction:column;height:100vh;overflow:hidden;font-size:13px;color:#1a1a1a}
@@ -69,11 +70,17 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
 .htext{line-height:1.85;overflow:hidden;height:100%}
 .cvr{justify-content:center;align-items:center;text-align:center;padding:20px}
 @media print{
+  /* 動的に書き換える @page ルールはここではなく <style id="pageStyle"> にて */
+  *{box-shadow:none!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important;margin:0!important;padding:0!important}
   header,.sidebar,.slbl{display:none!important}
-  .preview{background:#fff!important;padding:0!important;gap:0!important;display:block!important}
-  .swrap{display:block!important}
-  .spread{box-shadow:none!important;border:none!important;page-break-after:always;break-after:page;display:flex!important}
+  .main{display:block!important;overflow:visible!important;height:auto!important;min-height:0!important}
+  .preview{background:#fff!important;padding:0!important;gap:0!important;display:block!important;overflow:visible!important;height:auto!important}
+  .swrap{display:block!important;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;margin:0!important;padding:0!important}
+  .swrap:last-child{page-break-after:auto;break-after:auto}
+  .spread{box-shadow:none!important;border:none!important;display:flex!important;margin:0!important}
   .page{border:none!important}
+  /* 製本順モードで「シートN 表面」「シートN 裏面」を改ページ単位にする */
 }
 </style>
 </head>
@@ -204,7 +211,7 @@ input[type=range]{width:100%;cursor:pointer;margin:2px 0}
       <button class="tb on" data-pm="seq">通常表示</button>
       <button class="tb" data-pm="imp">製本順</button>
     </div>
-    <button class="abtn btn-p" onclick="window.print()" style="margin-top:10px">🖨 印刷 / PDF出力</button>
+    <button class="abtn btn-p" onclick="updatePageStyle();setTimeout(()=>window.print(),50)" style="margin-top:10px">🖨 印刷 / PDF出力</button>
     <div class="note" style="margin-top:6px">「製本順」で出力し、各シートを折り畳んで重ねてホチキス留めするだけで冊子になります。</div>
   </div>
 
@@ -384,6 +391,20 @@ function applyFormat(){
   if(!f) return;
   S.paper = f.paper;
   S.fold = f.fold;
+  updatePageStyle();
+}
+
+// 印刷時の @page サイズと向きを動的に設定
+function updatePageStyle(){
+  // 印刷用紙のサイズ（用紙そのもの。1枚あたり何ページ印刷するかは別問題）
+  // 本アプリでは、見開き = 1枚の用紙、として扱う
+  // つまり、A4／2面付の場合、A4横向きの紙に2ページ分（左右）並ぶ
+  // A4／4面付（A6小冊子）の場合も、見開き=A4横（折ったらA6に）
+  const paperSize = S.paper;  // 'A4' or 'A3'
+  const orient = 'landscape';  // 見開き出力なので必ず横向き
+  const css = `@page { size: ${paperSize} ${orient}; margin: 0; }`;
+  const styleEl = document.getElementById('pageStyle');
+  if(styleEl) styleEl.textContent = css;
 }
 
 function pageDimensions(){
