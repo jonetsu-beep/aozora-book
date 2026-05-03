@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Shippori+Mincho:wght@400;700&family=Zen+Old+Mincho:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=M+PLUS+1p:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans JP',sans-serif;background:#f0ede8;display:flex;flex-direction:column;min-height:100vh;font-size:13px;color:#1a1a1a}
+body{font-family:'Noto Sans JP',sans-serif;background:#f0ede8;display:flex;flex-direction:column;height:100vh;overflow:hidden;font-size:13px;color:#1a1a1a}
 ruby rt{font-size:.5em;line-height:1}
-header{background:#1a1a1a;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200}
+header{background:#1a1a1a;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;z-index:200}
 header h1{font-size:15px;font-weight:700;letter-spacing:1px}
 header span{font-size:10px;color:#888}
 .main{display:flex;flex:1;min-height:0;overflow:hidden}
@@ -399,22 +399,23 @@ function pageDimensions(){
   return [mm(fw/2), mm(fh)];
 }
 
-// 1ページに収まる目安文字数
-// 縦書きでは writing-mode:vertical-rl が自動的に複数列に流し込んでくれるので、
-// 単純に「ページ全体に何文字入るか」を計算すればOK
+// 1ページに収まる目安文字数（整数列・整数行で厳密に計算）
 function charsPerPageJp(){
   const [pw,ph]=pageDimensions();
   const fontPx=pt(S.jpSz);
-  const lineH=fontPx*1.85;  // 縦書きの「列の幅」
+  const lineH=fontPx*1.85;
   const padL=mm(S.mg), padS=mm(8);
-  const usableH=ph - padS*2 - fontPx*2;  // ヘッダーと余白を引いた高さ
-  const usableW=pw - padL - padS;        // 同・幅
-  // 縦書きでは：
-  //   1列 = usableH の高さに、fontPx間隔で文字が並ぶ → 1列の文字数 = usableH/fontPx
-  //   ページ幅に並ぶ列数 = usableW/lineH
-  const charsPerCol=Math.max(10, Math.floor(usableH/fontPx));
-  const cols=Math.max(1, Math.floor(usableW/lineH));
-  return Math.floor(charsPerCol * cols * 0.88);  // 安全マージン12%
+  // ヘッダー高さ：font 8px + padding-bottom 3px + margin 5px ≈ 16px、安全側で fontPx*2
+  const headerH = S.pn ? Math.max(20, fontPx*1.5) : 0;
+  const usableH = ph - padS*2 - headerH;
+  const usableW = pw - padL - padS;
+  // 縦書き：1列の文字数 = usableH / fontPx を整数化
+  // 列数 = usableW / lineH を整数化
+  const charsPerCol = Math.max(8, Math.floor(usableH / fontPx));
+  const cols = Math.max(1, Math.floor(usableW / lineH));
+  // 各段落で1字下げ＋段落間の改行があるため、実効効率は約 80%
+  // さらに最終列がはみ出すマージンとして 5% 引く
+  return Math.floor(charsPerCol * cols * 0.78);
 }
 
 function charsPerPageEn(){
@@ -422,12 +423,14 @@ function charsPerPageEn(){
   const fontPx=pt(S.enSz);
   const lineH=fontPx*1.55;
   const padL=mm(S.mg), padS=mm(8);
-  const usableH=ph - padS*2 - fontPx*2;
-  const usableW=pw - padL - padS;
-  // 英文は文字幅 ≈ fontPx*0.5
-  const charsPerLine=Math.floor(usableW/(fontPx*0.5));
-  const lines=Math.floor(usableH/lineH);
-  return Math.floor(charsPerLine * lines * 0.92);
+  const headerH = S.pn ? Math.max(20, fontPx*1.5) : 0;
+  const usableH = ph - padS*2 - headerH;
+  const usableW = pw - padL - padS;
+  // 英文の平均文字幅 ≈ fontPx * 0.55（プロポーショナルで広め）
+  const charsPerLine = Math.max(10, Math.floor(usableW / (fontPx * 0.55)));
+  const lines = Math.max(3, Math.floor(usableH / lineH));
+  // 段落間マージン・字下げで実効 85%
+  return Math.floor(charsPerLine * lines * 0.85);
 }
 
 // 段落配列をページ単位に詰める
